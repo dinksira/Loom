@@ -1,31 +1,58 @@
 """
 loom/config.py
 
-Configuration settings for the Loom application.
-These constants control various aspects of the application behavior.
+Central configuration for the Loom application.
+
+This module defines defaults and environment overrides for
+storage, analysis, and NLP behavior. Side effects are limited
+and intentional.
 """
 
 import os
 from pathlib import Path
 
-# Data folder for document storage
-DATA_DIR = Path(os.getenv("LOOM_DATA_DIR", "data"))
-DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-# Database file path
-DB_PATH = DATA_DIR / "loom.db"
+# ---------------------------------------------------------------------------
+# Base paths
+# ---------------------------------------------------------------------------
 
-# Report output directory
-REPORTS_DIR = DATA_DIR / "reports"
-REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+BASE_DATA_DIR = Path(os.getenv("LOOM_DATA_DIR", "data")).resolve()
 
-# Embedding settings
-TF_IDF_MIN_DF = 2  # Minimum document frequency for terms
-TF_IDF_MAX_DF = 0.95  # Maximum document frequency for terms
+DB_PATH = BASE_DATA_DIR / "loom.db"
+REPORTS_DIR = BASE_DATA_DIR / "reports"
+STOPWORDS_FILE = BASE_DATA_DIR / "stopwords.txt"
 
-# Clustering settings
-NUM_CLUSTERS = 10  # Default number of clusters for K-means
-ORPHAN_THRESHOLD = 0.1  # Threshold for low-document connectivity
 
-# NLP settings
-STOPWORDS_FILE = DATA_DIR / "stopwords.txt"  # Custom stopwords file, if needed
+def ensure_directories() -> None:
+    """
+    Ensure required directories exist.
+
+    Called explicitly at application startup to avoid
+    hidden import-time side effects.
+    """
+    BASE_DATA_DIR.mkdir(parents=True, exist_ok=True)
+    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+# ---------------------------------------------------------------------------
+# Text processing / NLP
+# ---------------------------------------------------------------------------
+
+# Ignore terms that appear in fewer than this many documents
+TF_IDF_MIN_DOC_FREQ = 2
+
+# Ignore terms that appear in more than this fraction of documents
+TF_IDF_MAX_DOC_FREQ = 0.95
+
+
+# ---------------------------------------------------------------------------
+# Clustering / analysis
+# ---------------------------------------------------------------------------
+
+# Default number of clusters for K-Means
+# NOTE: This is a heuristic, not a truth.
+DEFAULT_NUM_CLUSTERS = 10
+
+# Maximum cosine similarity threshold below which a document
+# is considered an "orphan"
+ORPHAN_SIMILARITY_THRESHOLD = 0.10
